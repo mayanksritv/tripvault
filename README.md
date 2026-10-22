@@ -163,3 +163,39 @@ tripvault/
 ├── package.json
 └── README.md
 ```
+
+
+## Week 2: Trip Management (CRUD)
+
+TripVault now supports private trip journaling for authenticated users. The dashboard can create, list, edit, and delete trips. Each trip stores a title, destination, optional start/end dates, description, optional 1–5 rating, and an owner reference.
+
+### Protected Trip API
+
+All routes require `Authorization: Bearer <JWT>`:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/api/trips` | Create a trip for the signed-in user |
+| `GET` | `/api/trips` | List only the signed-in user's trips |
+| `GET` | `/api/trips/:id` | Read one owned trip |
+| `PUT` | `/api/trips/:id` | Update one owned trip |
+| `DELETE` | `/api/trips/:id` | Delete one owned trip |
+
+The API validates required fields, date order and rating range. It scopes reads, updates and deletes by both trip ID and authenticated user ID, so users cannot access or modify another user's trips. The React API client automatically attaches the saved JWT.
+
+### Run locally
+
+1. Install Node.js (LTS) and ensure MongoDB Atlas is configured.
+2. Copy `server/.env.example` to `server/.env`, then set `MONGO_URI` and a random `JWT_SECRET` (at least 32 characters). Never commit `.env`.
+3. From the project root, run `npm install` and `npm run install:all`.
+4. Run `npm run dev`; the frontend is usually at `http://localhost:5173` and API at `http://localhost:5000`.
+5. Sign in, open the dashboard, and use **Create trip** to test create, edit, list, and delete.
+
+### Week 2 verification checklist
+
+- [ ] Register or sign in and confirm the dashboard loads.
+- [ ] Create a trip and confirm it appears in the list.
+- [ ] Edit a trip and confirm changes persist after refresh.
+- [ ] Delete a trip and confirm the list refreshes.
+- [ ] Call `/api/trips` without a token and confirm it returns `401`.
+- [ ] Test with two users and confirm each user sees only their own trips.

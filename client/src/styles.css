@@ -533,3 +533,101 @@ em { color: #8db69a; font-family: Georgia, 'Times New Roman', serif; font-weight
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Week 2 — Trip CRUD */
+.trips-section { margin-top: 24px; padding: 27px; border: 1px solid #e4e9e1; border-radius: 20px; background: #fbfcf9; }
+.trips-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+.trips-section-heading h2 { margin: 7px 0 5px; color: #213e2c; font-family: 'Playfair Display', Georgia, serif; font-size: clamp(25px, 3vw, 34px); font-weight: 500; letter-spacing: -.04em; }
+.trips-section-heading p { margin: 0; color: #7a867b; font-size: 12px; }
+.trip-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
+.trip-card { overflow: hidden; border: 1px solid #e5e9e2; border-radius: 15px; background: #fff; transition: transform .22s ease, box-shadow .22s ease; }
+.trip-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(31, 60, 40, .08); }
+.trip-card-art { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-height: 112px; padding: 13px; overflow: hidden; background: linear-gradient(145deg, #dbe7d7, #f1e8d5 65%, #b9cbb7); }
+.trip-card-art::before { position: absolute; right: -16px; bottom: -45px; width: 180px; height: 125px; border-radius: 50% 50% 0 0; background: #8ea98c; content: ''; transform: rotate(-13deg); }
+.trip-card-art::after { position: absolute; right: 45px; bottom: -60px; width: 150px; height: 120px; border-radius: 50% 50% 0 0; background: #456e52; content: ''; transform: rotate(12deg); }
+.trip-card-pin, .trip-card-rating { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 5px; max-width: 72%; padding: 6px 8px; border-radius: 20px; background: rgba(255,255,255,.9); color: #385640; font-size: 10px; font-weight: 600; }
+.trip-card-pin { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trip-card-rating { flex-shrink: 0; color: #986e28; }
+.trip-card-landscape { position: absolute; right: 0; bottom: 0; left: 0; height: 100%; pointer-events: none; }
+.trip-card-content { padding: 15px; }
+.trip-card-dates { display: flex; align-items: center; gap: 6px; color: #879187; font-size: 10px; }
+.trip-card-content h3 { margin: 9px 0 6px; color: #24402e; font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 500; overflow-wrap: anywhere; }
+.trip-card-content p { display: -webkit-box; min-height: 38px; margin: 0; overflow: hidden; color: #778177; font-size: 11px; line-height: 1.65; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.trip-card-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 15px; padding-top: 12px; border-top: 1px solid #edf0ea; }
+.trip-card-actions button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; cursor: pointer; font: 600 11px 'DM Sans', sans-serif; }
+.trip-action-edit { color: #345a3d; }
+.trip-action-delete { color: #a05a4d; }
+.trip-card-actions button:disabled { opacity: .55; cursor: wait; }
+.trips-empty, .trips-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px; padding: 28px 15px; text-align: center; }
+.trips-empty-icon { display: grid; width: 58px; height: 58px; margin-bottom: 15px; place-items: center; border: 1px solid #dce7d8; border-radius: 50%; background: #edf4e9; color: #426b49; }
+.trips-empty h3 { margin: 9px 0 6px; color: #284331; font: 500 23px 'Playfair Display', Georgia, serif; }
+.trips-empty p { max-width: 340px; margin: 0 0 17px; color: #7b867b; font-size: 12px; line-height: 1.7; }
+.trips-loading { flex-direction: row; gap: 10px; min-height: 180px; color: #718071; font-size: 12px; }
+.spin-icon { animation: tripvault-spin 1s linear infinite; }
+@keyframes tripvault-spin { to { transform: rotate(360deg); } }
+.trip-inline-success, .trip-inline-error { display: flex; align-items: center; gap: 8px; margin: 0 0 15px; padding: 10px 12px; border-radius: 9px; font-size: 11px; }
+.trip-inline-success { border: 1px solid #d5e8d3; background: #f0f8ee; color: #386842; }
+.trip-inline-success button { display: grid; margin-left: auto; padding: 2px; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.trip-inline-error { flex-wrap: wrap; border: 1px solid #f0d6d0; background: #fff5f2; color: #994d42; }
+.trip-inline-error .button { margin-left: auto; }
+.trip-form-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 20px; background: rgba(17, 35, 24, .55); backdrop-filter: blur(5px); animation: tripvault-fade-in .18s ease both; }
+.trip-form-modal { width: min(100%, 570px); max-height: calc(100vh - 40px); overflow-y: auto; padding: 25px; border: 1px solid rgba(255,255,255,.7); border-radius: 20px; background: #fffefa; box-shadow: 0 24px 80px rgba(12, 31, 19, .22); animation: tripvault-modal-in .22s ease both; }
+.trip-form-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 20px; }
+.trip-form-heading h2 { margin: 6px 0; color: #24402e; font: 500 28px 'Playfair Display', Georgia, serif; letter-spacing: -.03em; }
+.trip-form-heading p { margin: 0; color: #7b867b; font-size: 11px; line-height: 1.6; }
+.trip-form { display: flex; flex-direction: column; gap: 14px; }
+.trip-form label { display: flex; flex-direction: column; gap: 7px; color: #465a49; font-size: 11px; font-weight: 600; }
+.trip-form input, .trip-form select, .trip-form textarea { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid #dfe6dc; border-radius: 9px; outline: none; background: #fff; color: #283d2e; font: 400 12px 'DM Sans', sans-serif; transition: border-color .18s ease, box-shadow .18s ease; }
+.trip-form input:focus, .trip-form select:focus, .trip-form textarea:focus { border-color: #76977a; box-shadow: 0 0 0 3px rgba(118,151,122,.14); }
+.trip-form textarea { resize: vertical; }
+.trip-form-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.trip-form-footer { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 3px; padding-top: 14px; border-top: 1px solid #edf0e9; }
+.trip-form-footer > span { margin-right: auto; color: #899187; font-size: 10px; }
+.trip-form-footer .button { min-height: 38px; padding: 9px 12px; font-size: 11px; }
+.trip-form-footer .button:disabled { opacity: .65; cursor: wait; }
+@keyframes tripvault-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tripvault-modal-in { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 900px) { .trip-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .trips-section { padding: 17px; margin-top: 14px; border-radius: 15px; }.trips-section-heading { align-items: flex-start; }.trips-section-heading h2 { font-size: 25px; }.trips-section-heading > .button { flex-shrink: 0; padding: 10px 11px; font-size: 11px; }.trip-card-grid { grid-template-columns: 1fr; }.trip-card-art { min-height: 100px; }.trip-form-backdrop { padding: 10px; align-items: center; }.trip-form-modal { max-height: calc(100vh - 20px); padding: 18px; border-radius: 16px; }.trip-form-heading h2 { font-size: 24px; }.trip-form-two { gap: 8px; }.trip-form-footer > span { width: 100%; }.trip-form-footer .button { flex: 1; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .trip-card, .trip-form-backdrop, .trip-form-modal, .spin-icon { animation: none !important; transition: none !important; } }
+
+/* Dashboard navigation and Week 2 journal view */
+.dashboard-nav button { cursor: pointer; }
+.dashboard-nav button:focus-visible { outline: 2px solid #6d9674; outline-offset: 2px; }
+#overview-section, #trips-section, #journal-section { scroll-margin-top: 96px; }
+.journal-section { margin-top: 24px; padding: 27px; border: 1px solid #e4e9e1; border-radius: 20px; background: #fff; }
+.journal-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+.journal-section-heading h2 { margin: 7px 0 5px; color: #213e2c; font-family: 'Playfair Display', Georgia, serif; font-size: clamp(25px, 3vw, 34px); font-weight: 500; letter-spacing: -.04em; }
+.journal-section-heading p { margin: 0; color: #7a867b; font-size: 12px; line-height: 1.7; }
+.journal-timeline { display: flex; flex-direction: column; gap: 14px; }
+.journal-entry { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 13px; align-items: stretch; }
+.journal-entry-marker { display: grid; place-items: start center; padding-top: 18px; color: #537b59; position: relative; }
+.journal-entry:not(:last-child) .journal-entry-marker::after { position: absolute; top: 43px; bottom: -22px; left: 50%; width: 1px; background: #dce8dc; content: ''; }
+.journal-entry-marker svg { position: relative; z-index: 1; box-sizing: content-box; padding: 8px; border: 1px solid #e0eade; border-radius: 50%; background: #f0f6ed; }
+.journal-entry-card { min-width: 0; padding: 18px 20px 15px; border: 1px solid #e6ebe3; border-radius: 15px; background: #fbfcf9; transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+.journal-entry-card:hover { transform: translateY(-2px); border-color: #d5e2d2; box-shadow: 0 8px 22px rgba(31, 60, 40, .045); }
+.journal-entry-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 9px 15px; color: #7a897c; font-size: 10px; }
+.journal-entry-meta > span { display: inline-flex; align-items: center; gap: 5px; }
+.journal-entry-meta .journal-rating { color: #9a712e; }
+.journal-entry-card h3 { margin: 11px 0 6px; color: #24402e; font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.journal-entry-card > p { margin: 0; color: #6e7c70; font-size: 12px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.journal-entry-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 15px; padding-top: 12px; border-top: 1px solid #e9eee7; }
+.journal-entry-footer > span { display: inline-flex; align-items: center; gap: 6px; color: #7a8b7b; font-size: 9px; }
+.journal-entry-footer > span svg { color: #628a67; }
+.journal-entry-footer button { display: inline-flex; align-items: center; gap: 6px; padding: 3px 0; border: 0; background: transparent; color: #3d6846; font: 700 10px 'DM Sans', sans-serif; cursor: pointer; transition: gap .18s ease; }
+.journal-entry-footer button:hover { gap: 10px; }
+.journal-empty-state, .journal-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 240px; padding: 28px 18px; text-align: center; }
+.journal-empty-state-icon { display: grid; place-items: center; width: 54px; height: 54px; margin-bottom: 14px; border: 1px solid #dce7d8; border-radius: 50%; color: #426b49; background: #edf4e9; }
+.journal-empty-state h3 { max-width: 440px; margin: 9px 0 7px; color: #284331; font: 500 23px 'Playfair Display', Georgia, serif; }
+.journal-empty-state p { max-width: 450px; margin: 0 0 17px; color: #7b867b; font-size: 12px; line-height: 1.75; }
+.journal-loading { flex-direction: row; gap: 10px; min-height: 180px; color: #718071; font-size: 12px; }
+@media (max-width: 600px) {
+  .journal-section { margin-top: 14px; padding: 17px; border-radius: 15px; }
+  .journal-section-heading { align-items: flex-start; }
+  .journal-section-heading h2 { font-size: 25px; }
+  .journal-section-heading > .button { flex-shrink: 0; padding: 10px 11px; font-size: 11px; }
+  .journal-entry { grid-template-columns: 25px minmax(0, 1fr); gap: 8px; }
+  .journal-entry-card { padding: 14px; }
+  .journal-entry-card h3 { font-size: 19px; }
+  .journal-entry-footer > span { width: 100%; }
+}
