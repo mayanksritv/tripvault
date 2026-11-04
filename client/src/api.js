@@ -9,6 +9,11 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('tripvault_token') || sessionStorage.getItem('tripvault_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Let Axios set the multipart boundary for FormData uploads.
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+    delete config.headers['content-type'];
+  }
   return config;
 });
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import Trip from '../models/Trip.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
+import { uploadTripImage } from '../middleware/upload.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -85,6 +86,36 @@ router.put('/:id', async (req, res, next) => {
     await trip.save();
     return res.json({ message: 'Trip updated successfully.', trip });
   } catch (error) { return next(error); }
+});
+
+
+// Upload one photo to Cloudinary and attach its secure URL to an owned trip.
+router.post('/:id/upload', async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid trip ID.' });
+    const trip = await Trip.findOne({ _id: req.params.id, user: req.auth.userId });
+    if (!trip) return res.status(404).json({ message: 'Trip not found.' });
+    req.trip = trip;
+    return uploadTripImage(req, res, async (uploadError) => {
+      if (uploadError) return next(uploadError);
+      try {
+        if (!req.file?.path) return res.status(400).json({ message: 'Choose an image to upload.' });
+        const imageUrl = req.file.path;
+        if (!trip.coverImage) trip.coverImage = imageUrl;
+        if (!trip.photos.includes(imageUrl)) trip.photos.push(imageUrl);
+        await trip.save();
+        return res.status(201).json({
+          message: 'Photo uploaded successfully.',
+          coverImage: trip.coverImage,
+          photos: trip.photos
+        });
+      } catch (error) {
+        return next(error);
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 router.delete('/:id', async (req, res, next) => {

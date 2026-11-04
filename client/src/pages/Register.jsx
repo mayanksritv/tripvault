@@ -19,6 +19,7 @@ export default function Register() {
   const navigate = useNavigate();
   const { register, loading: authLoading } = useAuth();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -44,6 +45,7 @@ export default function Register() {
     event.preventDefault();
     setError('');
     if (name.trim().length < 2) return setError('Please enter your full name.');
+    if (!/^[a-z0-9_]{3,24}$/.test(username.trim().toLowerCase())) return setError('Username must be 3–24 characters using lowercase letters, numbers, or underscores.');
     if (password.length < 8) return setError('Use at least 8 characters for your password.');
     if (new TextEncoder().encode(password).length > 72) return setError('Password must be no more than 72 UTF-8 bytes.');
     if (password !== confirm) return setError('Those passwords do not match yet.');
@@ -51,7 +53,7 @@ export default function Register() {
 
     setSubmitting(true);
     try {
-      await register({ name: name.trim(), email: email.trim(), password });
+      await register({ name: name.trim(), username: username.trim().toLowerCase(), email: email.trim(), password });
       navigate('/login', { replace: true, state: { registered: true, registeredEmail: email.trim() } });
     } catch (requestError) {
       setError(getApiError(requestError));
@@ -79,6 +81,7 @@ export default function Register() {
           <form className="auth-form register-form" onSubmit={handleSubmit} noValidate>
             <Notice>{error}</Notice>
             <div className="field-group"><label className="field-label" htmlFor="full-name">Full name</label><div className="input-wrap"><UserRound className="input-icon" size={18} /><input className="form-input has-leading" id="full-name" type="text" placeholder="Alex Morgan" autoComplete="name" maxLength={80} value={name} onChange={(event) => setName(event.target.value)} required /></div></div>
+            <div className="field-group"><label className="field-label" htmlFor="register-username">Public username</label><div className="input-wrap"><span className="input-leading-char" aria-hidden="true">@</span><input className="form-input has-leading" id="register-username" type="text" placeholder="alex_morgan" autoComplete="username" minLength={3} maxLength={24} pattern="[a-z0-9_]{3,24}" value={username} onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} required /></div><small className="field-help">This becomes your public profile address. Use 3–24 lowercase letters, numbers, or underscores.</small></div>
             <div className="field-group"><label className="field-label" htmlFor="register-email">Email address</label><div className="input-wrap"><span className="input-leading-char" aria-hidden="true">@</span><input className="form-input has-leading" id="register-email" type="email" placeholder="you@example.com" autoComplete="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} required /></div></div>
             <div className="field-group"><div className="field-label-row"><label className="field-label" htmlFor="register-password">Password</label><span className={`strength-label strength-${strength}`}>{strengthLabel}</span></div><PasswordField id="register-password" label="" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Create a strong password" autoComplete="new-password" hint={null} /><div className="strength-meter" aria-label={`Password strength: ${strengthLabel}`}>{[1, 2, 3].map((bar) => <span className={strength >= bar ? 'filled' : ''} key={bar} />)}</div><small className="field-help">At least 8 characters. A mix of letters and numbers is even better.</small></div>
             <PasswordField id="confirm-password" label="Confirm password" value={confirm} onChange={(event) => setConfirm(event.target.value)} placeholder="Enter it one more time" autoComplete="new-password" />
@@ -91,7 +94,7 @@ export default function Register() {
       </div>
       <footer className="register-footer shell"><span>TripVault · Week 1 foundation</span><span>Small moments. Long memories.</span></footer>
       {infoModal ? <Modal title={infoModal === 'terms' ? 'Terms of Service' : 'Privacy Policy'} onClose={() => setInfoModal('')}>
-        {infoModal === 'terms' ? <><p>TripVault is a Week 1 internship project for building a secure account and session foundation. Use an email address you control and keep your password private.</p><p>Trip and photo features are planned for later project weeks and are not active in this build.</p></> : <><p>This Week 1 build stores your name, email address, and a bcrypt-hashed password in the configured MongoDB database. It does not store your raw password.</p><p>After sign-in, a JWT is stored in this browser's local storage to maintain the session. Sign out to remove it from this browser.</p></>}
+        {infoModal === 'terms' ? <><p>TripVault lets you create a travel journal, manage your trips, upload trip photos, and share a public traveler profile. Use an email address you control and keep your password private.</p><p>Only information shown on your public profile and its trip summaries can be viewed by people with your profile link. Do not include sensitive personal information in your bio or trip notes.</p></> : <><p>TripVault stores your account details and bcrypt-hashed password in the configured database. It does not store your raw password. Your email address and password are not included in public profile responses.</p><p>After sign-in, a JWT is stored in this browser to maintain your session. Trip data and photo uploads are available to the signed-in owner. Your public profile shows your name, username, bio, and selected trip details.</p></>}
       </Modal> : null}
     </main>
   );

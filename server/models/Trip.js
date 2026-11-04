@@ -7,6 +7,8 @@ const tripSchema = new mongoose.Schema({
   endDate: { type: Date },
   description: { type: String, trim: true, maxlength: 3000, default: '' },
   rating: { type: Number, min: 1, max: 5 },
+  coverImage: { type: String, trim: true, default: '' },
+  photos: { type: [String], default: [] },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true }
 }, { timestamps: true });
 

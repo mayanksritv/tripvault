@@ -1,35 +1,48 @@
 # TripVault 🗺️
 
-A calm, modern travel-memory journal starter built for the CodGen Full Stack (MERN) Week 1 internship task. The visual direction follows the supplied Roam/TripVault designs: deep forest green, sage surfaces, editorial typography, rounded cards, scenic imagery, and restrained motion.
+TripVault is a MERN-stack travel memory journal built for the CodGen Full Stack Virtual Internship. It lets travelers securely manage trips, attach trip photos stored in Cloudinary, and share a public profile that can be viewed without signing in.
 
-## Week 1 requirements implemented
+## Current features
 
-- Express API on port `5000` with MongoDB connection.
-- Mongoose `User` model containing name, unique email, and a bcrypt-hashed password.
-- `POST /api/auth/register` for validation and account creation.
-- `POST /api/auth/login` for credential validation and JWT issue.
-- Protected `GET /api/auth/me` for the authenticated profile.
-- React + Vite app with `/`, `/login`, `/register`, and protected `/dashboard` routes.
-- JWT stored in `localStorage`; the frontend restores and validates the session on page load.
-- End-to-end register → login → dashboard flow, validation messages, loading states, and logout.
-- Clean `/client` and `/server` separation. Environment files are ignored by Git.
+### Authentication (Week 1)
+- React + Vite frontend and Express API.
+- User registration and login with bcrypt password hashing.
+- JWT-based sessions and protected dashboard routes.
+- Existing Week 1/2 accounts are assigned a stable username during server startup if they do not already have one.
 
-The Week 1 scope does not include trip CRUD, photo uploads, sharing, or password reset APIs. The dashboard labels those as upcoming rather than pretending those features are already backed by a server.
+### Trip management (Week 2)
+- Create, list, view, edit, and delete trips.
+- Trips store title, destination, start/end dates, description, rating, and owner reference.
+- All trip routes require a valid JWT and only return or modify trips owned by the signed-in user.
+- Dashboard has separate Overview, Journeys, and Journal sections.
+
+### Photo uploads and public profiles (Week 3)
+- Cloudinary-backed image upload using `multer` and `multer-storage-cloudinary`.
+- Upload up to 10 images from the Create Trip or Edit Trip form; each image is uploaded individually to `POST /api/trips/:id/upload`.
+- JPG, PNG, and WEBP images up to 5 MB each are accepted.
+- The first image uploaded to a trip becomes its cover image. All uploaded URLs are also stored in the trip's `photos` array.
+- Trip cards display cover images, and the protected trip detail page (`/trips/:id`) shows the photo grid.
+- User accounts have a unique public username and optional bio.
+- Public profile route (`/profile/:username`) and API (`GET /api/users/:username/profile`) do not require authentication.
+- Public profile responses contain only name, username, bio, and trip summary fields. They never include email, password, or other sensitive account fields.
+- Signed-in users can edit their username and bio from the dashboard and open their public profile with **My Profile**.
 
 ## Requirements
 
 - Node.js 18.18+ (Node 20 LTS recommended)
 - npm
-- A MongoDB Atlas database (or local MongoDB)
+- MongoDB Atlas (free tier is sufficient) or a local MongoDB instance
+- A Cloudinary account for photo uploads
 
 ## 1. Configure the backend
 
-```bash
-cd server
-cp .env.example .env
+From the project root, copy the example file:
+
+```powershell
+Copy-Item server/.env.example server/.env
 ```
 
-Edit `server/.env` and set your MongoDB connection string and a long, random JWT secret:
+Edit `server/.env` and set your own values:
 
 ```dotenv
 PORT=5000
@@ -37,11 +50,24 @@ MONGO_URI=mongodb+srv://<db-user>:<db-password>@<cluster-host>/tripvault?retryWr
 JWT_SECRET=replace-this-with-a-random-secret-of-at-least-32-characters
 JWT_EXPIRES_IN=7d
 CLIENT_URL=http://localhost:5173
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-In MongoDB Atlas, create a database user and allow your development IP under **Network Access**. Avoid leaving `0.0.0.0/0` enabled in production. URL-encode special characters in the database username/password when needed. Never commit `.env` or share database credentials.
+### Cloudinary setup
 
-Generate a suitable secret with:
+1. Create a free account at [Cloudinary](https://cloudinary.com/).
+2. Open the Cloudinary Console / Dashboard.
+3. Copy **Cloud name**, **API Key**, and **API Secret**.
+4. Add them to `server/.env` using the exact variable names above.
+5. Restart the backend after changing `.env`.
+
+Cloudinary credentials are server-only. Never put the API secret in `client/.env`, frontend source, or GitHub. The server can start without Cloudinary values, but photo upload requests return `503` until all three credentials are configured.
+
+In MongoDB Atlas, create a database user and allow your development IP under **Network Access**. URL-encode special characters in database credentials when needed. Keep `server/.env` private.
+
+Generate a suitable JWT secret with:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
@@ -68,74 +94,96 @@ npm run dev
 - Backend health: <http://localhost:5000/api/health>
 - API base: <http://localhost:5000/api>
 
-The backend intentionally exits with a clear startup error if `MONGO_URI` or a sufficiently long `JWT_SECRET` is missing. Configure `server/.env` before starting it.
+The backend requires `MONGO_URI` and a `JWT_SECRET` of at least 32 characters. It connects to MongoDB before starting the API. When it starts, it backfills usernames for existing legacy accounts and ensures schema indexes.
 
 ## API reference
 
-### `POST /api/auth/register`
+### Authentication
 
-Request:
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | No | Register with name, username, email, and password |
+| `POST` | `/api/auth/login` | No | Validate credentials and return JWT |
+| `GET` | `/api/auth/me` | Yes | Return the current signed-in user's account details |
+
+Registration body:
 
 ```json
 {
   "name": "Alex Morgan",
+  "username": "alex_morgan",
   "email": "alex@example.com",
   "password": "a-strong-password"
 }
 ```
 
-Success (`201`):
+Username must be 3–24 characters and contain lowercase letters, numbers, or underscores.
 
-```json
-{
-  "message": "Account created successfully. You can now sign in.",
-  "user": {
-    "id": "<user-id>",
-    "name": "Alex Morgan",
-    "email": "alex@example.com"
-  }
-}
-```
+### Trips
 
-### `POST /api/auth/login`
+All trip routes require `Authorization: Bearer <token>`.
 
-Request:
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/api/trips` | Create a trip for the signed-in user |
+| `GET` | `/api/trips` | List only the signed-in user's trips |
+| `GET` | `/api/trips/:id` | Read one trip owned by the signed-in user |
+| `PUT` | `/api/trips/:id` | Update one owned trip |
+| `DELETE` | `/api/trips/:id` | Delete one owned trip |
+| `POST` | `/api/trips/:id/upload` | Upload one image and attach its Cloudinary URL to an owned trip |
 
-```json
-{ "email": "alex@example.com", "password": "a-strong-password" }
-```
+Photo upload uses `multipart/form-data` with the file field named `image`. The upload endpoint accepts one image per request. The frontend sends selected photos one at a time.
 
-Success (`200`) returns a `token` and a safe `user` object. The password hash is never included in responses.
+### User profiles
 
-### `GET /api/auth/me`
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/users/:username/profile` | No | Return a public user profile and trip summaries |
+| `PUT` | `/api/users/profile` | Yes | Update the signed-in user's username and/or bio |
 
-Send the header `Authorization: Bearer <token>`. Returns the authenticated user's safe profile. Missing, expired, or invalid tokens receive `401 Unauthorized`.
+The public endpoint explicitly selects `name`, `username`, and `bio` from the user model. Its trip list selects only `title`, `destination`, `startDate`, `endDate`, `rating`, and `coverImage`. Email and password are not returned.
 
-### `GET /api/health`
+## Data models
 
-Reports API status and whether MongoDB is connected.
+### User
 
-## Useful checks
+- `name`: String, required
+- `username`: String, required, unique, lowercase (3–24 characters)
+- `bio`: String, optional (maximum 280 characters)
+- `email`: String, required, unique
+- `password`: String, required, bcrypt hash, excluded from normal queries
 
-```bash
-# Check the frontend production build
-npm run build
+### Trip
 
-# Check backend JavaScript syntax
-node --check server/index.js
-node --check server/routes/auth.js
-node --check server/middleware/authMiddleware.js
-```
+- `title`: String, required
+- `destination`: String, required
+- `startDate`, `endDate`: Date
+- `description`: String
+- `rating`: Number, 1–5
+- `coverImage`: String, Cloudinary URL
+- `photos`: Array of Cloudinary URL strings
+- `user`: ObjectId reference to the owning User
 
-You can also test the API with Postman or Thunder Client. Register first, sign in to obtain the JWT, then use it as a Bearer token for `/api/auth/me`.
+## 4. Test the Week 3 work
+
+1. Sign in using a Week 1/2 account. Its username is generated automatically at server startup if it had none. Open the dashboard and check the username shown in **Edit Profile**.
+2. Open **Edit Profile**, set a unique username and a short bio, and save. Open **My Profile** to check the public page.
+3. Open the public profile URL in an incognito/private browser window. It should load without a token.
+4. Create a trip and select one or more JPG, PNG, or WEBP photos in the photo picker. Save the trip.
+5. Confirm that the trip card displays its cover image. Open **Details** on the trip card and confirm that the photo grid displays all uploaded images.
+6. Edit the trip and upload another image. Confirm that it is added to the grid.
+7. Open the public profile again and confirm the trip summary and cover image appear.
+8. Inspect the public API response and verify that email and password are not present.
+9. Check that the upload endpoint without a JWT returns `401`, and that a trip cannot be uploaded to by a different user.
 
 ## Security notes
 
-- Passwords are hashed with `bcryptjs` (12 salt rounds); plain-text passwords are never saved.
-- JWT signing uses `JWT_SECRET`; the API does not accept tokens from query strings.
-- Email is normalized and unique. Responses do not expose the password hash.
-- Auth inputs are validated, error messages avoid confirming whether an email exists during login, and request bodies are size-limited.
-- `.env` is ignored by Git. Use HTTPS and rotate credentials before any public deployment.
+- `CLOUDINARY_API_SECRET`, `MONGO_URI`, and `JWT_SECRET` belong only in `server/.env`.
+- `.env` files are ignored by Git. Keep `.env.example` placeholders only.
+- Image uploads are accepted only on an authenticated, owned trip, are limited to 5 MB, and are restricted to JPG, PNG, and WEBP MIME types.
+- Public profiles use allowlisted response fields. Do not change them to return a full User document.
+- Trip reads, updates, deletes, and uploads are scoped by both trip ID and authenticated user ID.
+- The API does not expose secrets in errors or public profile responses.
 
 ## Folder structure
 
@@ -146,16 +194,24 @@ tripvault/
 │   │   ├── components/
 │   │   ├── context/
 │   │   ├── pages/
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── PublicProfile.jsx
+│   │   │   └── TripDetail.jsx
 │   │   ├── App.jsx
-│   │   ├── main.jsx
+│   │   ├── api.js
 │   │   └── styles.css
-│   ├── .env.example
-│   ├── index.html
 │   └── package.json
 ├── server/
-│   ├── middleware/authMiddleware.js
-│   ├── models/User.js
-│   ├── routes/auth.js
+│   ├── middleware/
+│   │   ├── authMiddleware.js
+│   │   └── upload.js
+│   ├── models/
+│   │   ├── Trip.js
+│   │   └── User.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── trips.js
+│   │   └── users.js
 │   ├── .env.example
 │   ├── index.js
 │   └── package.json
@@ -163,39 +219,3 @@ tripvault/
 ├── package.json
 └── README.md
 ```
-
-
-## Week 2: Trip Management (CRUD)
-
-TripVault now supports private trip journaling for authenticated users. The dashboard can create, list, edit, and delete trips. Each trip stores a title, destination, optional start/end dates, description, optional 1–5 rating, and an owner reference.
-
-### Protected Trip API
-
-All routes require `Authorization: Bearer <JWT>`:
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/api/trips` | Create a trip for the signed-in user |
-| `GET` | `/api/trips` | List only the signed-in user's trips |
-| `GET` | `/api/trips/:id` | Read one owned trip |
-| `PUT` | `/api/trips/:id` | Update one owned trip |
-| `DELETE` | `/api/trips/:id` | Delete one owned trip |
-
-The API validates required fields, date order and rating range. It scopes reads, updates and deletes by both trip ID and authenticated user ID, so users cannot access or modify another user's trips. The React API client automatically attaches the saved JWT.
-
-### Run locally
-
-1. Install Node.js (LTS) and ensure MongoDB Atlas is configured.
-2. Copy `server/.env.example` to `server/.env`, then set `MONGO_URI` and a random `JWT_SECRET` (at least 32 characters). Never commit `.env`.
-3. From the project root, run `npm install` and `npm run install:all`.
-4. Run `npm run dev`; the frontend is usually at `http://localhost:5173` and API at `http://localhost:5000`.
-5. Sign in, open the dashboard, and use **Create trip** to test create, edit, list, and delete.
-
-### Week 2 verification checklist
-
-- [ ] Register or sign in and confirm the dashboard loads.
-- [ ] Create a trip and confirm it appears in the list.
-- [ ] Edit a trip and confirm changes persist after refresh.
-- [ ] Delete a trip and confirm the list refreshes.
-- [ ] Call `/api/trips` without a token and confirm it returns `401`.
-- [ ] Test with two users and confirm each user sees only their own trips.

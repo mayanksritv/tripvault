@@ -4,6 +4,9 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.js';
 import tripRoutes from './routes/trips.js';
+import userRoutes from './routes/users.js';
+import User from './models/User.js';
+import multer from 'multer';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -35,6 +38,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
+app.use('/api/users', userRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Route not found.' });
@@ -47,9 +51,43 @@ app.use((error, _req, res, _next) => {
   if (error instanceof SyntaxError && 'body' in error) {
     return res.status(400).json({ message: 'Request body must contain valid JSON.' });
   }
+  if (error instanceof multer.MulterError) {
+    const status = error.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    const message = error.code === 'LIMIT_FILE_SIZE'
+      ? 'Image must be 5 MB or smaller.'
+      : 'The image upload could not be processed.';
+    return res.status(status).json({ message });
+  }
+  if (Number.isInteger(error.status) && error.status >= 400 && error.status < 500) {
+    return res.status(error.status).json({ message: error.message });
+  }
   console.error('[TripVault API]', error);
   return res.status(500).json({ message: 'Something went wrong. Please try again.' });
 });
+
+
+async function backfillUsernames() {
+  // Week 1/2 accounts were created before usernames existed. Give those accounts
+  // a stable username so their existing credentials continue to work in Week 3.
+  const legacyUsers = await User.find({
+    $or: [{ username: { $exists: false } }, { username: null }, { username: '' }]
+  }).select('_id name').lean();
+
+  for (const user of legacyUsers) {
+    const base = (user.name || 'traveler')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 16) || 'traveler';
+    const username = `${base}_${user._id.toString().slice(-6)}`.slice(0, 24);
+    await User.collection.updateOne(
+      { _id: user._id, $or: [{ username: { $exists: false } }, { username: null }, { username: '' }] },
+      { $set: { username, bio: '' } }
+    );
+  }
+  await User.syncIndexes();
+  if (legacyUsers.length) console.log(`[TripVault] Added usernames to ${legacyUsers.length} existing account(s).`);
+}
 
 async function startServer() {
   if (!process.env.MONGO_URI) {
@@ -65,6 +103,7 @@ async function startServer() {
     await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 10000
     });
+    await backfillUsernames();
     console.log(`[TripVault] MongoDB connected: ${mongoose.connection.name}`);
     app.listen(PORT, () => {
       console.log(`[TripVault] API listening on http://localhost:${PORT}`);
