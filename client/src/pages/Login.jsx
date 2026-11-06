@@ -7,6 +7,7 @@ import Notice from '../components/Notice';
 import PasswordField from '../components/PasswordField';
 import { useAuth } from '../context/AuthContext';
 import { getApiError } from '../api';
+import { useToast } from '../context/ToastContext';
 
 const scene = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1500&q=85';
 
@@ -14,6 +15,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [email, setEmail] = useState(location.state?.registeredEmail || '');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -31,9 +33,12 @@ export default function Login() {
     setSubmitting(true);
     try {
       await login({ email: email.trim(), password }, { remember });
+      toast('success', 'Welcome back. Your journal is ready.');
       navigate('/dashboard', { replace: true });
     } catch (requestError) {
-      setError(getApiError(requestError));
+      const message = getApiError(requestError);
+      setError(message);
+      toast('error', message);
     } finally {
       setSubmitting(false);
     }
@@ -64,7 +69,6 @@ export default function Login() {
           </form>
           <p className="auth-switch">New to TripVault? <Link to="/register">Create an account <ArrowRight size={15} /></Link></p>
         </div>
-        <footer className="auth-footer"><Brand compact /><span>For everywhere you've been.</span></footer>
       </section>
     </main>
   );

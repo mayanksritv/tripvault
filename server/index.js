@@ -29,10 +29,11 @@ app.use(express.json({ limit: '20kb' }));
 app.use(express.urlencoded({ extended: false, limit: '20kb' }));
 
 app.get('/api/health', (_req, res) => {
-  res.status(200).json({
-    status: 'ok',
+  const databaseConnected = mongoose.connection.readyState === 1;
+  res.status(databaseConnected ? 200 : 503).json({
+    status: databaseConnected ? 'ok' : 'degraded',
     service: 'TripVault API',
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    database: databaseConnected ? 'connected' : 'disconnected'
   });
 });
 

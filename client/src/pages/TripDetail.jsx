@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Brand from '../components/Brand';
 import Notice from '../components/Notice';
 import api, { getApiError } from '../api';
+import { useToast } from '../context/ToastContext';
 
 function formatDate(value) {
   if (!value) return 'Date not set';
@@ -13,6 +14,7 @@ function formatDate(value) {
 export default function TripDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -26,11 +28,13 @@ export default function TripDetail() {
       const { data } = await api.get(`/trips/${id}`);
       setTrip(data.trip);
     } catch (requestError) {
-      setError(getApiError(requestError, 'Could not load this trip.'));
+      const message = getApiError(requestError, 'Could not load this trip.');
+      setError(message);
+      toast('error', message);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, toast]);
   useEffect(() => { loadTrip(); }, [loadTrip]);
 
   const photos = useMemo(() => {
@@ -68,8 +72,8 @@ export default function TripDetail() {
       }
     }
     await loadTrip();
-    if (uploaded) setNotice(`${uploaded} ${uploaded === 1 ? 'photo was' : 'photos were'} added to this trip.`);
-    if (uploadError) setError(uploadError);
+    if (uploaded) { const message = `${uploaded} ${uploaded === 1 ? 'photo was' : 'photos were'} added to this trip.`; setNotice(message); toast('success', message); }
+    if (uploadError) { setError(uploadError); toast('error', uploadError); }
     setUploading(false);
   }
 

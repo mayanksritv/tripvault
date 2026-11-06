@@ -1,5 +1,6 @@
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Camera, Compass, Feather, Globe2, LockKeyhole, MapPin, Sparkles } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Camera, Compass, Feather, Globe2, MapPin, Sparkles, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import Brand from '../components/Brand';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,13 +10,14 @@ const coast = 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto
 
 export default function Home() {
   const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <main className="home-page">
       <header className="site-header shell">
         <Brand />
-        <nav className="site-nav" aria-label="Main navigation">
-          <a href="#why-tripvault">Why TripVault</a>
-          <a href="#how-it-works">How it works</a>
+        <nav className={`site-nav${mobileMenuOpen ? ' is-open' : ''}`} id="site-main-nav" aria-label="Main navigation">
+          <a href="#why-tripvault" onClick={() => setMobileMenuOpen(false)}>Why TripVault</a>
+          <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>How it works</a>
         </nav>
         <div className="header-actions">
           {user ? <Link className="button button-primary button-small" to="/dashboard">Open journal <ArrowRight size={16} /></Link> : <>
@@ -23,6 +25,7 @@ export default function Home() {
             <Link className="button button-primary button-small" to="/register">Create account <ArrowRight size={16} /></Link>
           </>}
         </div>
+        <button className="site-menu-toggle" type="button" aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileMenuOpen} aria-controls="site-main-nav" onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}</button>
       </header>
 
       <section className="hero shell">
@@ -74,7 +77,6 @@ export default function Home() {
         <Link className="button button-cream button-large" to={user ? '/dashboard' : '/register'}>{user ? 'Open your journal' : 'Create your account'} <ArrowRight size={18} /></Link>
       </section>
 
-      <footer className="site-footer shell"><Brand compact /><p>For everywhere you've been, and all the places still calling.</p><span>© {new Date().getFullYear()} TripVault</span><div className="footer-lock"><LockKeyhole size={14} /> Private by design</div></footer>
     </main>
   );
 }

@@ -1,53 +1,96 @@
 # TripVault 🗺️
 
-TripVault is a MERN-stack travel memory journal built for the CodGen Full Stack Virtual Internship. It lets travelers securely manage trips, attach trip photos stored in Cloudinary, and share a public profile that can be viewed without signing in.
+A full-stack travel memory journal built with the MERN stack. TripVault lets travelers create and manage trips, upload photos to Cloudinary, and share public traveler profiles.
 
-## Current features
+> **Week 4 deployment status:** The repository is prepared for Render (API) and Vercel (frontend). Add your real deployed URLs below after completing the platform setup and end-to-end verification. No live URL is claimed until you deploy it.
 
-### Authentication (Week 1)
-- React + Vite frontend and Express API.
-- User registration and login with bcrypt password hashing.
-- JWT-based sessions and protected dashboard routes.
-- Existing Week 1/2 accounts are assigned a stable username during server startup if they do not already have one.
+## Live application
 
-### Trip management (Week 2)
-- Create, list, view, edit, and delete trips.
-- Trips store title, destination, start/end dates, description, rating, and owner reference.
-- All trip routes require a valid JWT and only return or modify trips owned by the signed-in user.
-- Dashboard has separate Overview, Journeys, and Journal sections.
+- **Frontend (Vercel):** `ADD_YOUR_VERCEL_URL_HERE`
+- **Backend health (Render):** `ADD_YOUR_RENDER_URL_HERE/api/health`
+- **GitHub repository:** `ADD_YOUR_PUBLIC_GITHUB_REPOSITORY_URL_HERE`
 
-### Photo uploads and public profiles (Week 3)
-- Cloudinary-backed image upload using `multer` and `multer-storage-cloudinary`.
-- Upload up to 10 images from the Create Trip or Edit Trip form; each image is uploaded individually to `POST /api/trips/:id/upload`.
-- JPG, PNG, and WEBP images up to 5 MB each are accepted.
-- The first image uploaded to a trip becomes its cover image. All uploaded URLs are also stored in the trip's `photos` array.
-- Trip cards display cover images, and the protected trip detail page (`/trips/:id`) shows the photo grid.
-- User accounts have a unique public username and optional bio.
-- Public profile route (`/profile/:username`) and API (`GET /api/users/:username/profile`) do not require authentication.
-- Public profile responses contain only name, username, bio, and trip summary fields. They never include email, password, or other sensitive account fields.
-- Signed-in users can edit their username and bio from the dashboard and open their public profile with **My Profile**.
+## Preview
 
-## Requirements
+The image below is the supplied dashboard UI reference. Before final submission, replace it with a fresh screenshot or short GIF of the running/deployed TripVault app at `docs/tripvault-preview.png`.
 
-- Node.js 18.18+ (Node 20 LTS recommended)
+![TripVault supplied dashboard UI reference](./docs/tripvault-preview.png)
+
+## Features
+
+### Authentication
+- Register and sign in with bcrypt-hashed passwords.
+- JWT-based sessions and protected routes.
+- A private dashboard for each signed-in user.
+
+### Trip management
+- Create, read, update, and delete travel trips.
+- Store title, destination, travel dates, notes, rating, and owner reference.
+- Enforce ownership checks for trip reads, updates, deletes, and uploads.
+
+### Photo uploads
+- Upload JPG, PNG, and WEBP photos to Cloudinary.
+- Display a trip cover image and photo gallery.
+- Limit image uploads to 5 MB per image.
+
+### Public profiles
+- Unique public usernames and editable profile bios.
+- Shareable `/profile/:username` pages accessible without signing in.
+- Public API responses expose safe profile and trip-summary fields only; email and password are never returned.
+
+### Week 4 user experience
+- Loading feedback, readable API error states, and empty states.
+- Success/error toast notifications for authentication and trip/photo actions.
+- Responsive layout for desktop, tablet, and mobile screens.
+- Collapsible dashboard navigation on mobile.
+- Shared footer with project author and GitHub profile link.
+
+## Tech stack
+
+- **Frontend:** React 18, Vite, React Router, Axios, Lucide icons, CSS Grid/Flexbox.
+- **Backend:** Node.js, Express, Mongoose, JWT, bcryptjs.
+- **Database:** MongoDB Atlas.
+- **Media storage:** Cloudinary, Multer, multer-storage-cloudinary.
+- **Deployment:** Render (Express API) and Vercel (React frontend).
+
+## Run locally
+
+### Requirements
+
+- Node.js 20 LTS recommended (Node 18.18+ supported by the frontend toolchain)
 - npm
-- MongoDB Atlas (free tier is sufficient) or a local MongoDB instance
-- A Cloudinary account for photo uploads
+- MongoDB Atlas or a local MongoDB instance
+- Cloudinary account for photo uploads
 
-## 1. Configure the backend
+### 1. Clone the repository
 
-From the project root, copy the example file:
+```bash
+git clone YOUR_PUBLIC_GITHUB_REPOSITORY_URL
+cd tripvault
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+npm run install:all
+```
+
+### 3. Configure environment variables
+
+Copy the example files:
 
 ```powershell
 Copy-Item server/.env.example server/.env
+Copy-Item client/.env.example client/.env
 ```
 
-Edit `server/.env` and set your own values:
+Configure `server/.env`:
 
 ```dotenv
 PORT=5000
-MONGO_URI=mongodb+srv://<db-user>:<db-password>@<cluster-host>/tripvault?retryWrites=true&w=majority
-JWT_SECRET=replace-this-with-a-random-secret-of-at-least-32-characters
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_random_secret_at_least_32_characters
 JWT_EXPIRES_IN=7d
 CLIENT_URL=http://localhost:5173
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -55,167 +98,129 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-### Cloudinary setup
+Configure `client/.env`:
 
-1. Create a free account at [Cloudinary](https://cloudinary.com/).
-2. Open the Cloudinary Console / Dashboard.
-3. Copy **Cloud name**, **API Key**, and **API Secret**.
-4. Add them to `server/.env` using the exact variable names above.
-5. Restart the backend after changing `.env`.
-
-Cloudinary credentials are server-only. Never put the API secret in `client/.env`, frontend source, or GitHub. The server can start without Cloudinary values, but photo upload requests return `503` until all three credentials are configured.
-
-In MongoDB Atlas, create a database user and allow your development IP under **Network Access**. URL-encode special characters in database credentials when needed. Keep `server/.env` private.
-
-Generate a suitable JWT secret with:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```dotenv
+VITE_API_URL=http://localhost:5000
 ```
 
-## 2. Install dependencies
+The API client appends `/api` automatically. Alternatively, set `VITE_API_BASE_URL` to the full API base, for example `http://localhost:5000/api`.
 
-From the project root:
+**Never commit `.env` files or expose Cloudinary, MongoDB, or JWT secrets.** The repository `.gitignore` excludes environment files while keeping `.env.example` templates.
 
-```bash
-npm install
-npm run install:all
-```
-
-## 3. Run the app
-
-From the project root:
+### 4. Start the app
 
 ```bash
 npm run dev
 ```
 
-- Frontend: <http://localhost:5173>
-- Backend health: <http://localhost:5000/api/health>
-- API base: <http://localhost:5000/api>
+- Frontend: `http://localhost:5173`
+- Backend health check: `http://localhost:5000/api/health`
 
-The backend requires `MONGO_URI` and a `JWT_SECRET` of at least 32 characters. It connects to MongoDB before starting the API. When it starts, it backfills usernames for existing legacy accounts and ensures schema indexes.
+### 5. Production build
 
-## API reference
-
-### Authentication
-
-| Method | Endpoint | Auth | Purpose |
-|---|---|---|---|
-| `POST` | `/api/auth/register` | No | Register with name, username, email, and password |
-| `POST` | `/api/auth/login` | No | Validate credentials and return JWT |
-| `GET` | `/api/auth/me` | Yes | Return the current signed-in user's account details |
-
-Registration body:
-
-```json
-{
-  "name": "Alex Morgan",
-  "username": "alex_morgan",
-  "email": "alex@example.com",
-  "password": "a-strong-password"
-}
+```bash
+npm run build
 ```
 
-Username must be 3–24 characters and contain lowercase letters, numbers, or underscores.
+The Vite production output is created in `client/dist`.
 
-### Trips
+## API overview
 
-All trip routes require `Authorization: Bearer <token>`.
+All protected endpoints require `Authorization: Bearer <JWT>`.
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/api/trips` | Create a trip for the signed-in user |
-| `GET` | `/api/trips` | List only the signed-in user's trips |
-| `GET` | `/api/trips/:id` | Read one trip owned by the signed-in user |
-| `PUT` | `/api/trips/:id` | Update one owned trip |
-| `DELETE` | `/api/trips/:id` | Delete one owned trip |
-| `POST` | `/api/trips/:id/upload` | Upload one image and attach its Cloudinary URL to an owned trip |
-
-Photo upload uses `multipart/form-data` with the file field named `image`. The upload endpoint accepts one image per request. The frontend sends selected photos one at a time.
-
-### User profiles
-
-| Method | Endpoint | Auth | Purpose |
+| Method | Endpoint | Access | Purpose |
 |---|---|---|---|
-| `GET` | `/api/users/:username/profile` | No | Return a public user profile and trip summaries |
-| `PUT` | `/api/users/profile` | Yes | Update the signed-in user's username and/or bio |
+| POST | `/api/auth/register` | Public | Register a traveler |
+| POST | `/api/auth/login` | Public | Sign in and receive JWT |
+| GET | `/api/auth/me` | Protected | Read current user |
+| POST | `/api/trips` | Protected | Create a trip |
+| GET | `/api/trips` | Protected | List trips owned by current user |
+| GET | `/api/trips/:id` | Protected | Read an owned trip |
+| PUT | `/api/trips/:id` | Protected | Update an owned trip |
+| DELETE | `/api/trips/:id` | Protected | Delete an owned trip |
+| POST | `/api/trips/:id/upload` | Protected | Upload a photo to an owned trip |
+| GET | `/api/users/:username/profile` | Public | Read public profile and trip summaries |
+| PUT | `/api/users/profile` | Protected | Update current user's username/bio |
+| GET | `/api/health` | Public | API and database health status |
 
-The public endpoint explicitly selects `name`, `username`, and `bio` from the user model. Its trip list selects only `title`, `destination`, `startDate`, `endDate`, `rating`, and `coverImage`. Email and password are not returned.
+## Deploy to Render and Vercel
 
-## Data models
+### 1. MongoDB Atlas
 
-### User
+- Use your production database and a dedicated database user.
+- Configure Atlas Network Access so the Render service can reach the cluster. The internship handout suggests allowing `0.0.0.0/0`; use that only if necessary and understand it permits network access attempts from any IP. Use a strong database password and least-privilege database user.
 
-- `name`: String, required
-- `username`: String, required, unique, lowercase (3–24 characters)
-- `bio`: String, optional (maximum 280 characters)
-- `email`: String, required, unique
-- `password`: String, required, bcrypt hash, excluded from normal queries
+### 2. Deploy backend to Render
 
-### Trip
+This repository includes a `render.yaml` Blueprint configuration. Or create a **Web Service** manually:
 
-- `title`: String, required
-- `destination`: String, required
-- `startDate`, `endDate`: Date
-- `description`: String
-- `rating`: Number, 1–5
-- `coverImage`: String, Cloudinary URL
-- `photos`: Array of Cloudinary URL strings
-- `user`: ObjectId reference to the owning User
+- Connect the TripVault GitHub repository.
+- **Root Directory:** `server`
+- **Build Command:** `npm install`
+- **Start Command:** `npm start` (runs `node index.js`)
+- **Health Check Path:** `/api/health`
 
-## 4. Test the Week 3 work
+Set these environment variables in Render's Environment tab:
 
-1. Sign in using a Week 1/2 account. Its username is generated automatically at server startup if it had none. Open the dashboard and check the username shown in **Edit Profile**.
-2. Open **Edit Profile**, set a unique username and a short bio, and save. Open **My Profile** to check the public page.
-3. Open the public profile URL in an incognito/private browser window. It should load without a token.
-4. Create a trip and select one or more JPG, PNG, or WEBP photos in the photo picker. Save the trip.
-5. Confirm that the trip card displays its cover image. Open **Details** on the trip card and confirm that the photo grid displays all uploaded images.
-6. Edit the trip and upload another image. Confirm that it is added to the grid.
-7. Open the public profile again and confirm the trip summary and cover image appear.
-8. Inspect the public API response and verify that email and password are not present.
-9. Check that the upload endpoint without a JWT returns `401`, and that a trip cannot be uploaded to by a different user.
+| Variable | Value |
+|---|---|
+| `MONGO_URI` | Production MongoDB connection string |
+| `JWT_SECRET` | Random secret of at least 32 characters |
+| `JWT_EXPIRES_IN` | `7d` |
+| `CLIENT_URL` | Exact Vercel origin, e.g. `https://your-app.vercel.app` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+| `NODE_ENV` | `production` |
 
-## Security notes
+Copy the deployed Render service URL, for example `https://your-api.onrender.com`.
 
-- `CLOUDINARY_API_SECRET`, `MONGO_URI`, and `JWT_SECRET` belong only in `server/.env`.
-- `.env` files are ignored by Git. Keep `.env.example` placeholders only.
-- Image uploads are accepted only on an authenticated, owned trip, are limited to 5 MB, and are restricted to JPG, PNG, and WEBP MIME types.
-- Public profiles use allowlisted response fields. Do not change them to return a full User document.
-- Trip reads, updates, deletes, and uploads are scoped by both trip ID and authenticated user ID.
-- The API does not expose secrets in errors or public profile responses.
+### 3. Deploy frontend to Vercel
 
-## Folder structure
+- Import the same GitHub repository into Vercel.
+- **Root Directory:** `client`
+- **Framework Preset:** Vite
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- Add `VITE_API_URL` with the Render service origin (no trailing slash), e.g. `https://your-api.onrender.com`.
+- Deploy. `client/vercel.json` rewrites frontend routes to `index.html` so routes such as `/profile/:username` work on refresh.
 
-```text
-tripvault/
-├── client/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── context/
-│   │   ├── pages/
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── PublicProfile.jsx
-│   │   │   └── TripDetail.jsx
-│   │   ├── App.jsx
-│   │   ├── api.js
-│   │   └── styles.css
-│   └── package.json
-├── server/
-│   ├── middleware/
-│   │   ├── authMiddleware.js
-│   │   └── upload.js
-│   ├── models/
-│   │   ├── Trip.js
-│   │   └── User.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── trips.js
-│   │   └── users.js
-│   ├── .env.example
-│   ├── index.js
-│   └── package.json
-├── .gitignore
-├── package.json
-└── README.md
-```
+After Vercel provides the frontend URL, return to Render and set `CLIENT_URL` to that exact origin, then redeploy/restart the backend if required.
+
+### 4. End-to-end production test
+
+Test against the deployed domains, not only localhost:
+
+1. Open the Vercel URL and register a new account.
+2. Sign in and confirm the dashboard loads.
+3. Create a trip and verify it persists after refresh.
+4. Upload an image and confirm it appears on the trip card and detail page.
+5. Open the public profile link in a private/incognito window without a token.
+6. Confirm the public response does not contain email or password.
+7. Edit and delete a trip, then confirm the list updates.
+8. Check the site at 375px mobile width and at tablet/desktop widths using Chrome DevTools device simulation.
+
+### 5. Final GitHub and internship submission
+
+- Add your Vercel live URL to this README and the GitHub repository description.
+- Add a screenshot/GIF at `docs/tripvault-preview.png`.
+- Confirm `.env` files and credentials are not committed.
+- Submit both the Vercel live URL and the GitHub repository link through the Week 4 Google Form.
+
+## Suggested final QA checklist
+
+- [ ] Login and registration show success/error feedback.
+- [ ] Dashboard, public profile, and trip detail have loading and error states.
+- [ ] Empty trip/profile/photo states are friendly and clear.
+- [ ] Create, edit, delete, and upload actions show toast feedback.
+- [ ] Dashboard navigation collapses to a hamburger menu on small screens.
+- [ ] Trip cards stack to one column on narrow phones; photo grids use one or two columns.
+- [ ] Login, registration, create-trip, and edit-trip forms are usable at 375px width.
+- [ ] Render health check reports `database: connected`.
+- [ ] Vercel frontend communicates with the Render API.
+- [ ] Full deployed flow passes end-to-end testing.
+
+## License
+
+Add a license if you intend to distribute this project under specific open-source terms. Otherwise, all rights are reserved by the repository owner by default.

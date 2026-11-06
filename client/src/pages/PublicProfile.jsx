@@ -5,6 +5,7 @@ import Brand from '../components/Brand';
 import AppLoader from '../components/AppLoader';
 import api, { getApiError } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 function initials(name = '') {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'T';
@@ -17,6 +18,7 @@ function formatDate(value) {
 export default function PublicProfile() {
   const { username } = useParams();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,10 +29,10 @@ export default function PublicProfile() {
     setError('');
     api.get(`/users/${encodeURIComponent(username)}/profile`)
       .then(({ data }) => { if (active) setProfile(data.profile); })
-      .catch((requestError) => { if (active) setError(getApiError(requestError, 'Could not load this traveler profile.')); })
+      .catch((requestError) => { if (active) { const message = getApiError(requestError, 'Could not load this traveler profile.'); setError(message); toast('error', message); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [username]);
+  }, [username, toast]);
 
   return (
     <main className="public-profile-page">
@@ -44,7 +46,6 @@ export default function PublicProfile() {
           <section className="public-profile-trips"><div className="public-profile-section-heading"><div><span className="section-overline">THE JOURNEY SO FAR</span><h2>Travel memories</h2><p>A collection of destinations and stories shared by this traveler.</p></div><span className="public-trip-count">{profile.trips.length} {profile.trips.length === 1 ? 'TRIP' : 'TRIPS'}</span></div>
             {profile.trips.length ? <div className="public-trip-grid">{profile.trips.map((trip) => <article className="public-trip-card" key={trip.id}><div className="public-trip-image">{trip.coverImage ? <img src={trip.coverImage} alt={`${trip.title} in ${trip.destination}`} loading="lazy" /> : <div className="public-trip-image-fallback"><Compass size={30} /></div>}<span><MapPin size={13} /> {trip.destination}</span></div><div className="public-trip-copy"><div className="public-trip-meta"><span><CalendarDays size={13} /> {formatDate(trip.startDate)}{trip.endDate ? ` — ${formatDate(trip.endDate)}` : ''}</span>{trip.rating ? <span className="public-trip-rating"><Star size={12} fill="currentColor" /> {trip.rating}/5</span> : null}</div><h3>{trip.title}</h3></div></article>)}</div> : <div className="public-profile-empty"><Compass size={25} /><h3>No public trips yet</h3><p>This traveler hasn't shared any journeys yet. Check back later.</p></div>}
           </section>
-          <footer className="public-profile-footer"><Brand compact /><span>For everywhere you've been.</span></footer>
         </div>
       ) : null}
     </main>

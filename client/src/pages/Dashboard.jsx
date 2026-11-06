@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, CheckCircle2, Compass, Feather, LogOut, MapPin, Plus, ShieldCheck, Star, Trash2, Pencil, X, PlaneTakeoff, LoaderCircle, Eye, UserRound, Camera, ExternalLink } from 'lucide-react';
+import { ArrowRight, CalendarDays, CheckCircle2, Compass, Feather, LogOut, MapPin, Plus, ShieldCheck, Star, Trash2, Pencil, X, PlaneTakeoff, LoaderCircle, Eye, UserRound, Camera, ExternalLink, Menu } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Brand from '../components/Brand';
@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import Notice from '../components/Notice';
 import { useAuth } from '../context/AuthContext';
 import api, { getApiError } from '../api';
+import { useToast } from '../context/ToastContext';
 
 const landscape = 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=85';
 const blankTrip = { title: '', destination: '', startDate: '', endDate: '', description: '', rating: '' };
@@ -15,10 +16,12 @@ function displayDate(value) { if (!value) return 'Date not set'; return new Intl
 
 export default function Dashboard() {
   const { user, logout, updateUser } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [showSignOut, setShowSignOut] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [activeSection, setActiveSection] = useState('overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [trips, setTrips] = useState([]);
   const [tripsLoading, setTripsLoading] = useState(true);
   const [tripError, setTripError] = useState('');
@@ -40,14 +43,15 @@ export default function Dashboard() {
   const loadTrips = useCallback(async () => {
     setTripsLoading(true); setTripError('');
     try { const response = await api.get('/trips'); setTrips(response.data.trips || []); }
-    catch (error) { setTripError(getApiError(error, 'Could not load your trips.')); }
+    catch (error) { const message = getApiError(error, 'Could not load your trips.'); setTripError(message); toast('error', message); }
     finally { setTripsLoading(false); }
-  }, []);
+  }, [toast]);
   useEffect(() => { loadTrips(); }, [loadTrips]);
 
   function handleLogout() { logout(); navigate('/login', { replace: true }); }
   function navigateToSection(section, elementId) {
     setActiveSection(section);
+    setMobileMenuOpen(false);
     document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   function clearPhotoSelection() { photoPreviews.forEach((url) => URL.revokeObjectURL(url)); setPhotoFiles([]); setPhotoPreviews([]); }
@@ -101,12 +105,15 @@ export default function Dashboard() {
       }
 
       setFormOpen(false); setForm(blankTrip); setEditingId(null); setExistingPhotos([]); clearPhotoSelection();
-      setTripNotice(photoError
+      const successMessage = photoError
         ? `${editingId ? 'Trip updated' : 'Trip created'}, but photo upload did not finish. ${uploadedCount} photo(s) uploaded.`
-        : (editingId ? 'Your trip was updated.' : 'Your trip was added to the journal.'));
+        : (editingId ? 'Your trip was updated.' : 'Your trip was added to the journal.');
+      setTripNotice(successMessage);
+      toast(photoError ? 'info' : 'success', successMessage);
+      if (uploadedCount) toast('success', `${uploadedCount} photo${uploadedCount === 1 ? '' : 's'} uploaded.`);
       await loadTrips();
-      if (photoError) setTripError(photoError);
-    } catch (error) { setTripError(error.response?.data?.message || getApiError(error, 'Could not save this trip.')); }
+      if (photoError) { setTripError(photoError); toast('error', photoError); }
+    } catch (error) { const message = error.response?.data?.message || getApiError(error, 'Could not save this trip.'); setTripError(message); toast('error', message); }
     finally { setSaving(false); }
   }
   function openProfileEditor() { setProfileForm({ username: user?.username || '', bio: user?.bio || '' }); setProfileError(''); setProfileOpen(true); }
@@ -114,24 +121,35 @@ export default function Dashboard() {
     event.preventDefault(); setProfileSaving(true); setProfileError('');
     try {
       const { data } = await api.put('/users/profile', { username: profileForm.username.trim().toLowerCase(), bio: profileForm.bio });
-      updateUser(data.user); setProfileOpen(false); setTripNotice('Your public profile was updated.');
-    } catch (error) { setProfileError(getApiError(error, 'Could not update your profile.')); }
+      updateUser(data.user); setProfileOpen(false); setTripNotice('Your public profile was updated.'); toast('success', 'Your public profile was updated.');
+    } catch (error) { const message = getApiError(error, 'Could not update your profile.'); setProfileError(message); toast('error', message); }
     finally { setProfileSaving(false); }
   }
   async function deleteTrip(trip) {
     if (!window.confirm(`Delete “${trip.title}”? This cannot be undone.`)) return;
     setDeletingId(trip._id); setTripError(''); setTripNotice('');
-    try { await api.delete(`/trips/${trip._id}`); setTrips((current) => current.filter((item) => item._id !== trip._id)); setTripNotice('Trip deleted.'); }
-    catch (error) { setTripError(getApiError(error, 'Could not delete this trip.')); }
+    try { await api.delete(`/trips/${trip._id}`); setTrips((current) => current.filter((item) => item._id !== trip._id)); setTripNotice('Trip deleted.'); toast('success', 'Trip deleted.'); }
+    catch (error) { const message = getApiError(error, 'Could not delete this trip.'); setTripError(message); toast('error', message); }
     finally { setDeletingId(null); }
   }
 
   return (
     <main className="dashboard-page">
-      <header className="dashboard-header"><div className="dashboard-header-inner shell"><Brand /><nav className="dashboard-nav" aria-label="Dashboard sections"><button type="button" className={activeSection === 'overview' ? 'nav-active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => navigateToSection('overview', 'overview-section')}><Compass size={16} /> Overview</button><button type="button" className={activeSection === 'journeys' ? 'nav-active' : ''} aria-current={activeSection === 'journeys' ? 'page' : undefined} onClick={() => navigateToSection('journeys', 'trips-section')}><MapPin size={16} /> Journeys</button><button type="button" className={activeSection === 'journal' ? 'nav-active' : ''} aria-current={activeSection === 'journal' ? 'page' : undefined} onClick={() => navigateToSection('journal', 'journal-section')}><Feather size={16} /> Journal</button></nav><div className="dashboard-user"><span className="active-session"><span className="status-dot" /> ACTIVE SESSION</span><span className="user-avatar" aria-label={`${user?.name} profile`}>{initials(user?.name)}</span><button className="icon-button signout-icon" type="button" onClick={() => setShowSignOut(true)} aria-label="Sign out"><LogOut size={17} /></button></div></div></header>
+      <header className="dashboard-header">
+        <div className="dashboard-header-inner shell">
+          <Brand />
+          <button className="dashboard-menu-toggle" type="button" aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen} aria-controls="dashboard-main-nav" onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}</button>
+          <nav id="dashboard-main-nav" className={`dashboard-nav${mobileMenuOpen ? ' is-open' : ''}`} aria-label="Dashboard sections">
+            <button type="button" className={activeSection === 'overview' ? 'nav-active' : ''} aria-current={activeSection === 'overview' ? 'page' : undefined} onClick={() => navigateToSection('overview', 'overview-section')}><Compass size={16} /> Overview</button>
+            <button type="button" className={activeSection === 'journeys' ? 'nav-active' : ''} aria-current={activeSection === 'journeys' ? 'page' : undefined} onClick={() => navigateToSection('journeys', 'trips-section')}><MapPin size={16} /> Journeys</button>
+            <button type="button" className={activeSection === 'journal' ? 'nav-active' : ''} aria-current={activeSection === 'journal' ? 'page' : undefined} onClick={() => navigateToSection('journal', 'journal-section')}><Feather size={16} /> Journal</button>
+          </nav>
+          <div className="dashboard-user"><span className="active-session"><span className="status-dot" /> ACTIVE SESSION</span><span className="user-avatar" aria-label={`${user?.name} profile`}>{initials(user?.name)}</span><button className="icon-button signout-icon" type="button" onClick={() => setShowSignOut(true)} aria-label="Sign out"><LogOut size={17} /></button></div>
+        </div>
+      </header>
 
       <div className="dashboard-content shell">
-        <div className="dashboard-greeting-row" id="overview-section"><div><div className="eyebrow"><span className="status-dot" /> YOUR SPACE, YOUR STORIES</div><p className="dashboard-date"><CalendarDays size={14} /> {dateLabel}</p></div><div className="welcome-chip"><CheckCircle2 size={15} /> Week 3 · Photos & profiles</div></div>
+        <div className="dashboard-greeting-row" id="overview-section"><div><div className="eyebrow"><span className="status-dot" /> YOUR SPACE, YOUR STORIES</div><p className="dashboard-date"><CalendarDays size={14} /> {dateLabel}</p></div><div className="welcome-chip"><CheckCircle2 size={15} /> Week 4 · Final polish</div></div>
         <section className="dashboard-hero" style={{ backgroundImage: `linear-gradient(90deg, rgba(18,49,35,.92) 0%, rgba(18,49,35,.77) 47%, rgba(18,49,35,.15) 100%), url(${landscape})` }}>
           <div className="dashboard-hero-copy"><span className="hero-kicker"><span className="status-dot status-dot-light" /> YOUR JOURNAL IS OPEN</span><h1>Welcome back,<br /><em>{user?.name?.split(' ')[0] || 'traveler'}.</em></h1><p>Every great journey starts with a first page. This one is yours.</p><button className="button button-cream" onClick={openCreate} type="button">Add a trip <Plus size={17} /></button></div>
           <div className="hero-coordinate-card"><MapPin size={15} /><span><strong>Made for the moments</strong><small>that stay with you.</small></span></div><div className="dashboard-hero-decoration"><span /><span /><span /></div>

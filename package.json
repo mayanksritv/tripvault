@@ -2,7 +2,7 @@
   "name": "tripvault",
   "version": "1.0.0",
   "private": true,
-  "description": "TripVault - a travel memory journal with secure account authentication",
+  "description": "TripVault \u2014 a responsive travel memory journal with authentication, trip management, Cloudinary photo uploads, and public profiles.",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

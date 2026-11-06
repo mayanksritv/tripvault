@@ -8,6 +8,7 @@ import Notice from '../components/Notice';
 import PasswordField from '../components/PasswordField';
 import { useAuth } from '../context/AuthContext';
 import { getApiError } from '../api';
+import { useToast } from '../context/ToastContext';
 
 const scenes = [
   'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=520&q=80',
@@ -18,6 +19,7 @@ const scenes = [
 export default function Register() {
   const navigate = useNavigate();
   const { register, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -54,9 +56,12 @@ export default function Register() {
     setSubmitting(true);
     try {
       await register({ name: name.trim(), username: username.trim().toLowerCase(), email: email.trim(), password });
+      toast('success', 'Your account has been created. Sign in to continue.');
       navigate('/login', { replace: true, state: { registered: true, registeredEmail: email.trim() } });
     } catch (requestError) {
-      setError(getApiError(requestError));
+      const message = getApiError(requestError);
+      setError(message);
+      toast('error', message);
     } finally {
       setSubmitting(false);
     }
@@ -92,7 +97,6 @@ export default function Register() {
           <div className="register-vault-note"><ShieldCheck size={16} /><span><strong>TripVault promise</strong> · Private travel memories, thoughtfully kept.</span></div>
         </section>
       </div>
-      <footer className="register-footer shell"><span>TripVault · Week 1 foundation</span><span>Small moments. Long memories.</span></footer>
       {infoModal ? <Modal title={infoModal === 'terms' ? 'Terms of Service' : 'Privacy Policy'} onClose={() => setInfoModal('')}>
         {infoModal === 'terms' ? <><p>TripVault lets you create a travel journal, manage your trips, upload trip photos, and share a public traveler profile. Use an email address you control and keep your password private.</p><p>Only information shown on your public profile and its trip summaries can be viewed by people with your profile link. Do not include sensitive personal information in your bio or trip notes.</p></> : <><p>TripVault stores your account details and bcrypt-hashed password in the configured database. It does not store your raw password. Your email address and password are not included in public profile responses.</p><p>After sign-in, a JWT is stored in this browser to maintain your session. Trip data and photo uploads are available to the signed-in owner. Your public profile shows your name, username, bio, and selected trip details.</p></>}
       </Modal> : null}
