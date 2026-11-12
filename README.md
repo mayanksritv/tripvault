@@ -2,6 +2,8 @@
 
 A full-stack travel memory journal built with the MERN stack. TripVault lets travelers create and manage trips, upload photos to Cloudinary, and share public traveler profiles.
 
+# App url : https://tripvault-kohl.vercel.app/
+
 > **Week 4 deployment status:** The repository is prepared for Render (API) and Vercel (frontend). Add your real deployed URLs below after completing the platform setup and end-to-end verification. No live URL is claimed until you deploy it.
 
 ## Live application
