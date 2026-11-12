@@ -14,11 +14,11 @@ A full-stack travel memory journal built with the MERN stack. TripVault lets tra
 
 ## Preview
 
-<img width="1920" height="1080" alt="Screenshot (862)" src="https://github.com/user-attachments/assets/d2ac7884-c5e6-4549-a631-eb766cf53d94" />
+<img width="1920" height="827" alt="Screenshot (862)" src="https://github.com/user-attachments/assets/5b0b87b1-caa8-4691-bdd0-b25d4a015f25" />
 
-<img width="1920" height="1080" alt="Screenshot (863)" src="https://github.com/user-attachments/assets/992ff5a9-b3fb-4f6f-977e-b07c3f025832" />
+<img width="1920" height="830" alt="Screenshot (863)" src="https://github.com/user-attachments/assets/370ab339-05e7-4d77-bfd4-52bcb4f437d6" />
 
-<img width="1920" height="1080" alt="Screenshot (864)" src="https://github.com/user-attachments/assets/0fff6bbb-3623-4e8f-92d1-75cfb22d3283" />
+<img width="1920" height="813" alt="Screenshot (864)" src="https://github.com/user-attachments/assets/add6323e-b776-47b9-8886-69e5b3872fae" />
 
 
 ## Features
