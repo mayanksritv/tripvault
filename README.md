@@ -14,9 +14,12 @@ A full-stack travel memory journal built with the MERN stack. TripVault lets tra
 
 ## Preview
 
-The image below is the supplied dashboard UI reference. Before final submission, replace it with a fresh screenshot or short GIF of the running/deployed TripVault app at `docs/tripvault-preview.png`.
+<img width="1920" height="1080" alt="Screenshot (862)" src="https://github.com/user-attachments/assets/d2ac7884-c5e6-4549-a631-eb766cf53d94" />
 
-![TripVault supplied dashboard UI reference](./docs/tripvault-preview.png)
+<img width="1920" height="1080" alt="Screenshot (863)" src="https://github.com/user-attachments/assets/992ff5a9-b3fb-4f6f-977e-b07c3f025832" />
+
+<img width="1920" height="1080" alt="Screenshot (864)" src="https://github.com/user-attachments/assets/0fff6bbb-3623-4e8f-92d1-75cfb22d3283" />
+
 
 ## Features
 
@@ -225,4 +228,4 @@ Test against the deployed domains, not only localhost:
 
 ## License
 
-Add a license if you intend to distribute this project under specific open-source terms. Otherwise, all rights are reserved by the repository owner by default.
+All rights are reserved by the repository owner by default.
